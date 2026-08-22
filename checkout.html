@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Checkout</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Urban Basics</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="products.html">Productos</a>
+      <a href="cart.html">Carrito</a>
+      <a href="checkout.html">Checkout</a>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Checkout</h2>
+
+    <form id="checkoutForm">
+      <input type="text" placeholder="Nombre completo" required>
+      <input type="email" placeholder="Email" required>
+      <input type="text" placeholder="Dirección" required>
+
+      <select required>
+        <option value="">Método de envío</option>
+        <option>Envío estándar</option>
+        <option>Envío express</option>
+      </select>
+
+      <select required>
+        <option value="">Método de pago</option>
+        <option>Tarjeta ficticia</option>
+        <option>PayPal ficticio</option>
+      </select>
+
+      <button type="submit">Finalizar compra</button>
+    </form>
+  </main>
+
+  <script src="products.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
