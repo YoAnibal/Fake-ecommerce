@@ -67,14 +67,20 @@ function pushViewItemList(listProducts, listId, listName) {
 }
 
 
-function trackSelectItem(productId, listId, listName, index) {
+function trackSelectItem(
+  productId,
+  listId,
+  listName,
+  index
+) {
   const product = products.find(
     product => product.id === productId
   );
 
   if (!product) return;
 
-  // Keep list context for the product detail page
+
+  // Save list context for the future view_item event
   sessionStorage.setItem(
     "lastSelectedItem",
     JSON.stringify({
@@ -85,9 +91,11 @@ function trackSelectItem(productId, listId, listName, index) {
     })
   );
 
+
   pushEcommerceEvent("select_item", {
     item_list_id: listId,
     item_list_name: listName,
+
     items: [
       createGa4Item(
         product,
@@ -102,18 +110,27 @@ function trackSelectItem(productId, listId, listName, index) {
 
 
 function getCart() {
-  return JSON.parse(localStorage.getItem("cart")) || [];
+  return JSON.parse(
+    localStorage.getItem("cart")
+  ) || [];
 }
 
 
 function saveCart(cart) {
-  localStorage.setItem("cart", JSON.stringify(cart));
+  localStorage.setItem(
+    "cart",
+    JSON.stringify(cart)
+  );
 }
 
 
 function addToCart(productId) {
   const cart = getCart();
-  const item = cart.find(product => product.id === productId);
+
+  const item = cart.find(
+    product => product.id === productId
+  );
+
 
   if (item) {
     item.quantity += 1;
@@ -123,6 +140,7 @@ function addToCart(productId) {
       quantity: 1
     });
   }
+
 
   saveCart(cart);
 
@@ -144,15 +162,20 @@ function removeFromCart(productId) {
 
 
 function renderProducts() {
-  const grid = document.getElementById("productsGrid");
+  const grid =
+    document.getElementById("productsGrid");
 
   if (!grid) return;
 
-  const params = new URLSearchParams(
-    window.location.search
-  );
 
-  const category = params.get("category");
+  const params =
+    new URLSearchParams(
+      window.location.search
+    );
+
+  const category =
+    params.get("category");
+
 
   let filteredProducts = products;
 
@@ -160,12 +183,10 @@ function renderProducts() {
   let listName = "Todos los productos";
 
 
-  // If the page is filtered by category,
-  // use that category as the list context
   if (category) {
-
     filteredProducts = products.filter(
-      product => product.category === category
+      product =>
+        product.category === category
     );
 
     listId =
@@ -175,37 +196,47 @@ function renderProducts() {
   }
 
 
-  // Render products
-  grid.innerHTML = filteredProducts.map(product => `
-    <div class="card">
+  grid.innerHTML =
+    filteredProducts
+      .map((product, index) => `
+        <div class="card">
 
-      <img
-        src="${product.image}"
-        alt="${product.name}"
-      >
+          <img
+            src="${product.image}"
+            alt="${product.name}"
+          >
 
-      <h3>${product.name}</h3>
+          <h3>${product.name}</h3>
 
-      <p>${product.category}</p>
+          <p>${product.category}</p>
 
-      <p>$${product.price}</p>
+          <p>$${product.price}</p>
 
-      <a
-        class="btn"
-        href="product.html?id=${product.id}"
-      >
-        Ver detalle
-      </a>
+          <a
+            class="btn"
+            href="product.html?id=${product.id}"
+            onclick="trackSelectItem(
+              '${product.id}',
+              '${listId}',
+              '${listName}',
+              ${index}
+            )"
+          >
+            Ver detalle
+          </a>
 
-      <button onclick="addToCart('${product.id}')">
-        Añadir al carrito
-      </button>
+          <button
+            onclick="addToCart('${product.id}')"
+          >
+            Añadir al carrito
+          </button>
 
-    </div>
-  `).join("");
+        </div>
+      `)
+      .join("");
 
 
-  // GA4 ecommerce - product list impression
+  // GA4 - product list impression
   pushViewItemList(
     filteredProducts,
     listId,
@@ -216,7 +247,9 @@ function renderProducts() {
 
 function renderProductDetail() {
   const container =
-    document.getElementById("productDetail");
+    document.getElementById(
+      "productDetail"
+    );
 
   if (!container) return;
 
@@ -226,15 +259,17 @@ function renderProductDetail() {
       window.location.search
     );
 
-  const id = params.get("id");
+  const id =
+    params.get("id");
 
-  const product = products.find(
-    item => item.id === id
-  );
+
+  const product =
+    products.find(
+      item => item.id === id
+    );
 
 
   if (!product) {
-
     container.innerHTML =
       "<p>Producto no encontrado.</p>";
 
@@ -264,7 +299,9 @@ function renderProductDetail() {
         Producto ficticio para practicar ecommerce tracking.
       </p>
 
-      <button onclick="addToCart('${product.id}')">
+      <button
+        onclick="addToCart('${product.id}')"
+      >
         Añadir al carrito
       </button>
 
@@ -275,10 +312,14 @@ function renderProductDetail() {
 
 function renderCart() {
   const container =
-    document.getElementById("cartItems");
+    document.getElementById(
+      "cartItems"
+    );
 
   const totalContainer =
-    document.getElementById("cartTotal");
+    document.getElementById(
+      "cartTotal"
+    );
 
 
   if (!container) return;
@@ -288,7 +329,6 @@ function renderCart() {
 
 
   if (cart.length === 0) {
-
     container.innerHTML =
       "<p>Tu carrito está vacío.</p>";
 
@@ -301,51 +341,60 @@ function renderCart() {
   let total = 0;
 
 
-  container.innerHTML = cart.map(item => {
+  container.innerHTML =
+    cart.map(item => {
 
-    const product = products.find(
-      p => p.id === item.id
-    );
+      const product =
+        products.find(
+          p => p.id === item.id
+        );
 
-    const subtotal =
-      product.price * item.quantity;
+      const subtotal =
+        product.price *
+        item.quantity;
 
-    total += subtotal;
+      total += subtotal;
 
 
-    return `
-      <div class="card">
+      return `
+        <div class="card">
 
-        <h3>${product.name}</h3>
+          <h3>
+            ${product.name}
+          </h3>
 
-        <p>
-          Cantidad: ${item.quantity}
-        </p>
+          <p>
+            Cantidad: ${item.quantity}
+          </p>
 
-        <p>
-          Subtotal: $${subtotal.toFixed(2)}
-        </p>
+          <p>
+            Subtotal:
+            $${subtotal.toFixed(2)}
+          </p>
 
-        <button
-          onclick="removeFromCart('${product.id}')"
-        >
-          Eliminar
-        </button>
+          <button
+            onclick="removeFromCart('${product.id}')"
+          >
+            Eliminar
+          </button>
 
-      </div>
-    `;
-
-  }).join("");
+        </div>
+      `;
+    })
+    .join("");
 
 
   totalContainer.innerHTML =
-    "Total: $" + total.toFixed(2);
+    "Total: $" +
+    total.toFixed(2);
 }
 
 
 function setupCheckout() {
   const form =
-    document.getElementById("checkoutForm");
+    document.getElementById(
+      "checkoutForm"
+    );
 
   if (!form) return;
 
@@ -356,7 +405,9 @@ function setupCheckout() {
 
       event.preventDefault();
 
-      localStorage.removeItem("cart");
+      localStorage.removeItem(
+        "cart"
+      );
 
       window.location.href =
         "thank-you.html";
@@ -367,7 +418,9 @@ function setupCheckout() {
 
 function setupNewsletter() {
   const form =
-    document.getElementById("newsletterForm");
+    document.getElementById(
+      "newsletterForm"
+    );
 
   if (!form) return;
 
@@ -378,7 +431,9 @@ function setupNewsletter() {
 
       event.preventDefault();
 
-      alert("Gracias por suscribirte");
+      alert(
+        "Gracias por suscribirte"
+      );
 
       form.reset();
     }
@@ -388,13 +443,19 @@ function setupNewsletter() {
 
 function setupSearch() {
   const searchInput =
-    document.getElementById("searchInput");
+    document.getElementById(
+      "searchInput"
+    );
 
   const grid =
-    document.getElementById("productsGrid");
+    document.getElementById(
+      "productsGrid"
+    );
 
 
-  if (!searchInput || !grid) return;
+  if (!searchInput || !grid) {
+    return;
+  }
 
 
   searchInput.addEventListener(
@@ -402,51 +463,83 @@ function setupSearch() {
     function() {
 
       const query =
-        searchInput.value.toLowerCase();
+        searchInput.value
+          .toLowerCase()
+          .trim();
 
 
-      const results = products.filter(
-        product =>
+      const results =
+        products.filter(
+          product =>
 
-          product.name
-            .toLowerCase()
-            .includes(query)
+            product.name
+              .toLowerCase()
+              .includes(query)
 
-          ||
+            ||
 
-          product.category
-            .toLowerCase()
-            .includes(query)
-      );
+            product.category
+              .toLowerCase()
+              .includes(query)
+        );
 
 
-      grid.innerHTML = results.map(product => `
-        <div class="card">
+      const listId =
+        query
+          ? "search_results"
+          : "all_products";
 
-          <img
-            src="${product.image}"
-            alt="${product.name}"
-          >
 
-          <h3>${product.name}</h3>
+      const listName =
+        query
+          ? "Resultados de búsqueda"
+          : "Todos los productos";
 
-          <p>${product.category}</p>
 
-          <p>$${product.price}</p>
+      grid.innerHTML =
+        results
+          .map((product, index) => `
+            <div class="card">
 
-          <a
-            class="btn"
-            href="product.html?id=${product.id}"
-          >
-            Ver detalle
-          </a>
+              <img
+                src="${product.image}"
+                alt="${product.name}"
+              >
 
-          <button onclick="addToCart('${product.id}')">
-            Añadir al carrito
-          </button>
+              <h3>
+                ${product.name}
+              </h3>
 
-        </div>
-      `).join("");
+              <p>
+                ${product.category}
+              </p>
+
+              <p>
+                $${product.price}
+              </p>
+
+              <a
+                class="btn"
+                href="product.html?id=${product.id}"
+                onclick="trackSelectItem(
+                  '${product.id}',
+                  '${listId}',
+                  '${listName}',
+                  ${index}
+                )"
+              >
+                Ver detalle
+              </a>
+
+              <button
+                onclick="addToCart('${product.id}')"
+              >
+                Añadir al carrito
+              </button>
+
+            </div>
+          `)
+          .join("");
     }
   );
 }
