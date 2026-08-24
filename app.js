@@ -80,7 +80,6 @@ function trackSelectItem(
 
   if (!product) return;
 
-
   // Save list context for the product detail page
   sessionStorage.setItem(
     "lastSelectedItem",
@@ -91,7 +90,6 @@ function trackSelectItem(
       index: index
     })
   );
-
 
   pushEcommerceEvent("select_item", {
     item_list_id: listId,
@@ -137,7 +135,6 @@ function addToCart(
     product => product.id === productId
   );
 
-
   if (item) {
     item.quantity += 1;
   } else {
@@ -147,38 +144,38 @@ function addToCart(
     });
   }
 
-
   saveCart(cart);
-
 
   const product = products.find(
     product => product.id === productId
   );
 
-
   if (!product) return;
 
 
   // If the add happens from the PDP,
-  // recover the list attribution from select_item
+  // recover list attribution from select_item
   if (!listId) {
     const storedSelection =
       sessionStorage.getItem(
         "lastSelectedItem"
       );
 
-
     if (storedSelection) {
       const selection =
         JSON.parse(storedSelection);
 
-
       if (
         selection.productId === productId
       ) {
-        listId = selection.listId;
-        listName = selection.listName;
-        index = selection.index;
+        listId =
+          selection.listId;
+
+        listName =
+          selection.listName;
+
+        index =
+          selection.index;
       }
     }
   }
@@ -189,8 +186,6 @@ function addToCart(
     "add_to_cart",
     {
       currency: CURRENCY,
-
-      // Only one unit was added
       value: product.price,
 
       items: [
@@ -215,11 +210,9 @@ function addToCart(
 function removeFromCart(productId) {
   const cart = getCart();
 
-
   const cartItem = cart.find(
     item => item.id === productId
   );
-
 
   if (!cartItem) return;
 
@@ -227,7 +220,6 @@ function removeFromCart(productId) {
   const product = products.find(
     product => product.id === productId
   );
-
 
   if (!product) return;
 
@@ -246,7 +238,6 @@ function removeFromCart(productId) {
     "remove_from_cart",
     {
       currency: CURRENCY,
-
       value: removedValue,
 
       items: [
@@ -268,8 +259,9 @@ function removeFromCart(productId) {
   saveCart(updatedCart);
 
 
-  // Refresh cart content without reloading the page
-  renderCart();
+  // Update the cart visually without sending
+  // another view_cart event
+  renderCart(false);
 }
 
 
@@ -292,10 +284,13 @@ function renderProducts() {
     params.get("category");
 
 
-  let filteredProducts = products;
+  let filteredProducts =
+    products;
+
 
   let listId =
     "all_products";
+
 
   let listName =
     "Todos los productos";
@@ -501,7 +496,7 @@ function renderProductDetail() {
 }
 
 
-function renderCart() {
+function renderCart(trackView = true) {
   const container =
     document.getElementById(
       "cartItems"
@@ -534,6 +529,8 @@ function renderCart() {
 
   let total = 0;
 
+  const ga4Items = [];
+
 
   container.innerHTML =
     cart.map(item => {
@@ -550,6 +547,15 @@ function renderCart() {
 
 
       total += subtotal;
+
+
+      // Build GA4 item with current cart quantity
+      ga4Items.push(
+        createGa4Item(
+          product,
+          item.quantity
+        )
+      );
 
 
       return `
@@ -584,6 +590,25 @@ function renderCart() {
   totalContainer.innerHTML =
     "Total: $" +
     total.toFixed(2);
+
+
+  // GA4 - cart view
+  // Only send on the actual cart page view,
+  // not when renderCart() is called after removing an item
+  if (trackView) {
+    pushEcommerceEvent(
+      "view_cart",
+      {
+        currency: CURRENCY,
+
+        value:
+          Number(total.toFixed(2)),
+
+        items:
+          ga4Items
+      }
+    );
+  }
 }
 
 
