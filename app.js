@@ -80,7 +80,7 @@ function trackSelectItem(
   if (!product) return;
 
 
-  // Save list context for the future view_item event
+  // Save list context for the product detail page
   sessionStorage.setItem(
     "lastSelectedItem",
     JSON.stringify({
@@ -307,6 +307,50 @@ function renderProductDetail() {
 
     </div>
   `;
+
+
+  // Recover list attribution from select_item if available
+  let listId;
+  let listName;
+  let index;
+
+
+  const storedSelection =
+    sessionStorage.getItem(
+      "lastSelectedItem"
+    );
+
+
+  if (storedSelection) {
+    const selection =
+      JSON.parse(storedSelection);
+
+
+    // Only use the stored attribution if it belongs
+    // to the product currently being viewed
+    if (selection.productId === product.id) {
+      listId = selection.listId;
+      listName = selection.listName;
+      index = selection.index;
+    }
+  }
+
+
+  // GA4 - product detail view
+  pushEcommerceEvent("view_item", {
+    currency: CURRENCY,
+    value: product.price,
+
+    items: [
+      createGa4Item(
+        product,
+        1,
+        index,
+        listId,
+        listName
+      )
+    ]
+  });
 }
 
 
