@@ -54,6 +54,7 @@ function pushViewItemList(listProducts, listId, listName) {
   pushEcommerceEvent("view_item_list", {
     item_list_id: listId,
     item_list_name: listName,
+
     items: listProducts.map((product, index) =>
       createGa4Item(
         product,
@@ -124,7 +125,12 @@ function saveCart(cart) {
 }
 
 
-function addToCart(productId) {
+function addToCart(
+  productId,
+  listId,
+  listName,
+  index
+) {
   const cart = getCart();
 
   const item = cart.find(
@@ -144,26 +150,134 @@ function addToCart(productId) {
 
   saveCart(cart);
 
-  alert("Producto añadido al carrito");
+
+  const product = products.find(
+    product => product.id === productId
+  );
+
+
+  if (!product) return;
+
+
+  // If the add happens from the PDP,
+  // recover the list attribution from select_item
+  if (!listId) {
+    const storedSelection =
+      sessionStorage.getItem(
+        "lastSelectedItem"
+      );
+
+
+    if (storedSelection) {
+      const selection =
+        JSON.parse(storedSelection);
+
+
+      if (
+        selection.productId === productId
+      ) {
+        listId = selection.listId;
+        listName = selection.listName;
+        index = selection.index;
+      }
+    }
+  }
+
+
+  // GA4 - add to cart
+  pushEcommerceEvent(
+    "add_to_cart",
+    {
+      currency: CURRENCY,
+
+      // Only one unit was added
+      value: product.price,
+
+      items: [
+        createGa4Item(
+          product,
+          1,
+          index,
+          listId,
+          listName
+        )
+      ]
+    }
+  );
+
+
+  alert(
+    "Producto añadido al carrito"
+  );
 }
 
 
 function removeFromCart(productId) {
-  let cart = getCart();
+  const cart = getCart();
 
-  cart = cart.filter(
-    item => item.id !== productId
+
+  const cartItem = cart.find(
+    item => item.id === productId
   );
 
-  saveCart(cart);
 
-  location.reload();
+  if (!cartItem) return;
+
+
+  const product = products.find(
+    product => product.id === productId
+  );
+
+
+  if (!product) return;
+
+
+  const removedQuantity =
+    cartItem.quantity;
+
+
+  const removedValue =
+    product.price *
+    removedQuantity;
+
+
+  // GA4 - remove from cart
+  pushEcommerceEvent(
+    "remove_from_cart",
+    {
+      currency: CURRENCY,
+
+      value: removedValue,
+
+      items: [
+        createGa4Item(
+          product,
+          removedQuantity
+        )
+      ]
+    }
+  );
+
+
+  const updatedCart =
+    cart.filter(
+      item => item.id !== productId
+    );
+
+
+  saveCart(updatedCart);
+
+
+  // Refresh cart content without reloading the page
+  renderCart();
 }
 
 
 function renderProducts() {
   const grid =
-    document.getElementById("productsGrid");
+    document.getElementById(
+      "productsGrid"
+    );
 
   if (!grid) return;
 
@@ -173,26 +287,35 @@ function renderProducts() {
       window.location.search
     );
 
+
   const category =
     params.get("category");
 
 
   let filteredProducts = products;
 
-  let listId = "all_products";
-  let listName = "Todos los productos";
+  let listId =
+    "all_products";
+
+  let listName =
+    "Todos los productos";
 
 
   if (category) {
-    filteredProducts = products.filter(
-      product =>
-        product.category === category
-    );
+    filteredProducts =
+      products.filter(
+        product =>
+          product.category === category
+      );
+
 
     listId =
-      "category_" + category.toLowerCase();
+      "category_" +
+      category.toLowerCase();
 
-    listName = category;
+
+    listName =
+      category;
   }
 
 
@@ -206,11 +329,17 @@ function renderProducts() {
             alt="${product.name}"
           >
 
-          <h3>${product.name}</h3>
+          <h3>
+            ${product.name}
+          </h3>
 
-          <p>${product.category}</p>
+          <p>
+            ${product.category}
+          </p>
 
-          <p>$${product.price}</p>
+          <p>
+            $${product.price}
+          </p>
 
           <a
             class="btn"
@@ -226,7 +355,12 @@ function renderProducts() {
           </a>
 
           <button
-            onclick="addToCart('${product.id}')"
+            onclick="addToCart(
+              '${product.id}',
+              '${listId}',
+              '${listName}',
+              ${index}
+            )"
           >
             Añadir al carrito
           </button>
@@ -251,6 +385,7 @@ function renderProductDetail() {
       "productDetail"
     );
 
+
   if (!container) return;
 
 
@@ -258,6 +393,7 @@ function renderProductDetail() {
     new URLSearchParams(
       window.location.search
     );
+
 
   const id =
     params.get("id");
@@ -285,14 +421,18 @@ function renderProductDetail() {
         alt="${product.name}"
       >
 
-      <h2>${product.name}</h2>
+      <h2>
+        ${product.name}
+      </h2>
 
       <p>
-        Categoría: ${product.category}
+        Categoría:
+        ${product.category}
       </p>
 
       <p>
-        Precio: $${product.price}
+        Precio:
+        $${product.price}
       </p>
 
       <p>
@@ -309,7 +449,6 @@ function renderProductDetail() {
   `;
 
 
-  // Recover list attribution from select_item if available
   let listId;
   let listName;
   let index;
@@ -326,31 +465,39 @@ function renderProductDetail() {
       JSON.parse(storedSelection);
 
 
-    // Only use the stored attribution if it belongs
-    // to the product currently being viewed
-    if (selection.productId === product.id) {
-      listId = selection.listId;
-      listName = selection.listName;
-      index = selection.index;
+    if (
+      selection.productId === product.id
+    ) {
+      listId =
+        selection.listId;
+
+      listName =
+        selection.listName;
+
+      index =
+        selection.index;
     }
   }
 
 
   // GA4 - product detail view
-  pushEcommerceEvent("view_item", {
-    currency: CURRENCY,
-    value: product.price,
+  pushEcommerceEvent(
+    "view_item",
+    {
+      currency: CURRENCY,
+      value: product.price,
 
-    items: [
-      createGa4Item(
-        product,
-        1,
-        index,
-        listId,
-        listName
-      )
-    ]
-  });
+      items: [
+        createGa4Item(
+          product,
+          1,
+          index,
+          listId,
+          listName
+        )
+      ]
+    }
+  );
 }
 
 
@@ -359,6 +506,7 @@ function renderCart() {
     document.getElementById(
       "cartItems"
     );
+
 
   const totalContainer =
     document.getElementById(
@@ -369,14 +517,16 @@ function renderCart() {
   if (!container) return;
 
 
-  const cart = getCart();
+  const cart =
+    getCart();
 
 
   if (cart.length === 0) {
     container.innerHTML =
       "<p>Tu carrito está vacío.</p>";
 
-    totalContainer.innerHTML = "";
+    totalContainer.innerHTML =
+      "";
 
     return;
   }
@@ -393,9 +543,11 @@ function renderCart() {
           p => p.id === item.id
         );
 
+
       const subtotal =
         product.price *
         item.quantity;
+
 
       total += subtotal;
 
@@ -408,7 +560,8 @@ function renderCart() {
           </h3>
 
           <p>
-            Cantidad: ${item.quantity}
+            Cantidad:
+            ${item.quantity}
           </p>
 
           <p>
@@ -440,6 +593,7 @@ function setupCheckout() {
       "checkoutForm"
     );
 
+
   if (!form) return;
 
 
@@ -449,9 +603,11 @@ function setupCheckout() {
 
       event.preventDefault();
 
+
       localStorage.removeItem(
         "cart"
       );
+
 
       window.location.href =
         "thank-you.html";
@@ -466,6 +622,7 @@ function setupNewsletter() {
       "newsletterForm"
     );
 
+
   if (!form) return;
 
 
@@ -475,9 +632,11 @@ function setupNewsletter() {
 
       event.preventDefault();
 
+
       alert(
         "Gracias por suscribirte"
       );
+
 
       form.reset();
     }
@@ -490,6 +649,7 @@ function setupSearch() {
     document.getElementById(
       "searchInput"
     );
+
 
   const grid =
     document.getElementById(
@@ -576,7 +736,12 @@ function setupSearch() {
               </a>
 
               <button
-                onclick="addToCart('${product.id}')"
+                onclick="addToCart(
+                  '${product.id}',
+                  '${listId}',
+                  '${listName}',
+                  ${index}
+                )"
               >
                 Añadir al carrito
               </button>
