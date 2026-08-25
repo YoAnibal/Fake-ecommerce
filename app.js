@@ -80,6 +80,7 @@ function trackSelectItem(
 
   if (!product) return;
 
+
   sessionStorage.setItem(
     "lastSelectedItem",
     JSON.stringify({
@@ -89,6 +90,7 @@ function trackSelectItem(
       index: index
     })
   );
+
 
   pushEcommerceEvent("select_item", {
     item_list_id: listId,
@@ -134,6 +136,7 @@ function addToCart(
     product => product.id === productId
   );
 
+
   if (item) {
     item.quantity += 1;
   } else {
@@ -143,6 +146,7 @@ function addToCart(
     });
   }
 
+
   saveCart(cart);
 
 
@@ -150,27 +154,38 @@ function addToCart(
     product => product.id === productId
   );
 
+
   if (!product) return;
 
 
   // If the add happens from the PDP,
   // recover list attribution from select_item
   if (!listId) {
+
     const storedSelection =
       sessionStorage.getItem(
         "lastSelectedItem"
       );
 
+
     if (storedSelection) {
+
       const selection =
         JSON.parse(storedSelection);
+
 
       if (
         selection.productId === productId
       ) {
-        listId = selection.listId;
-        listName = selection.listName;
-        index = selection.index;
+
+        listId =
+          selection.listId;
+
+        listName =
+          selection.listName;
+
+        index =
+          selection.index;
       }
     }
   }
@@ -181,6 +196,7 @@ function addToCart(
     "add_to_cart",
     {
       currency: CURRENCY,
+
       value: product.price,
 
       items: [
@@ -210,12 +226,14 @@ function removeFromCart(productId) {
     item => item.id === productId
   );
 
+
   if (!cartItem) return;
 
 
   const product = products.find(
     product => product.id === productId
   );
+
 
   if (!product) return;
 
@@ -234,6 +252,7 @@ function removeFromCart(productId) {
     "remove_from_cart",
     {
       currency: CURRENCY,
+
       value: removedValue,
 
       items: [
@@ -266,6 +285,7 @@ function renderProducts() {
       "productsGrid"
     );
 
+
   if (!grid) return;
 
 
@@ -292,6 +312,7 @@ function renderProducts() {
 
 
   if (category) {
+
     filteredProducts =
       products.filter(
         product =>
@@ -396,6 +417,7 @@ function renderProductDetail() {
 
 
   if (!product) {
+
     container.innerHTML =
       "<p>Producto no encontrado.</p>";
 
@@ -451,6 +473,7 @@ function renderProductDetail() {
 
 
   if (storedSelection) {
+
     const selection =
       JSON.parse(storedSelection);
 
@@ -458,6 +481,7 @@ function renderProductDetail() {
     if (
       selection.productId === product.id
     ) {
+
       listId =
         selection.listId;
 
@@ -475,6 +499,7 @@ function renderProductDetail() {
     "view_item",
     {
       currency: CURRENCY,
+
       value: product.price,
 
       items: [
@@ -512,6 +537,7 @@ function renderCart(trackView = true) {
 
 
   if (cart.length === 0) {
+
     container.innerHTML =
       "<p>Tu carrito está vacío.</p>";
 
@@ -588,6 +614,7 @@ function renderCart(trackView = true) {
 
   // GA4 - cart view
   if (trackView) {
+
     pushEcommerceEvent(
       "view_cart",
       {
@@ -621,10 +648,10 @@ function setupCheckout() {
 
 
   // GA4 - begin checkout
-  // Only send if there are products in the cart
   if (cart.length > 0) {
 
     let checkoutValue = 0;
+
 
     const checkoutItems =
       cart.map(item => {
@@ -656,20 +683,51 @@ function setupCheckout() {
 
     if (checkoutItems.length > 0) {
 
-      pushEcommerceEvent(
-        "begin_checkout",
-        {
-          currency: CURRENCY,
+      // Create a stable representation
+      // of the current cart
+      const checkoutCartKey =
+        cart
+          .map(item =>
+            `${item.id}:${item.quantity}`
+          )
+          .sort()
+          .join("|");
 
-          value:
-            Number(
-              checkoutValue.toFixed(2)
-            ),
 
-          items:
-            checkoutItems
-        }
-      );
+      const previousCheckoutCartKey =
+        sessionStorage.getItem(
+          "checkoutStartedCart"
+        );
+
+
+      // Only fire begin_checkout if this
+      // cart has not already started checkout
+      if (
+        previousCheckoutCartKey !==
+        checkoutCartKey
+      ) {
+
+        pushEcommerceEvent(
+          "begin_checkout",
+          {
+            currency: CURRENCY,
+
+            value:
+              Number(
+                checkoutValue.toFixed(2)
+              ),
+
+            items:
+              checkoutItems
+          }
+        );
+
+
+        sessionStorage.setItem(
+          "checkoutStartedCart",
+          checkoutCartKey
+        );
+      }
     }
   }
 
