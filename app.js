@@ -80,7 +80,6 @@ function trackSelectItem(
 
   if (!product) return;
 
-  // Save list context for the product detail page
   sessionStorage.setItem(
     "lastSelectedItem",
     JSON.stringify({
@@ -146,6 +145,7 @@ function addToCart(
 
   saveCart(cart);
 
+
   const product = products.find(
     product => product.id === productId
   );
@@ -168,14 +168,9 @@ function addToCart(
       if (
         selection.productId === productId
       ) {
-        listId =
-          selection.listId;
-
-        listName =
-          selection.listName;
-
-        index =
-          selection.index;
+        listId = selection.listId;
+        listName = selection.listName;
+        index = selection.index;
       }
     }
   }
@@ -209,6 +204,7 @@ function addToCart(
 
 function removeFromCart(productId) {
   const cart = getCart();
+
 
   const cartItem = cart.find(
     item => item.id === productId
@@ -259,8 +255,7 @@ function removeFromCart(productId) {
   saveCart(updatedCart);
 
 
-  // Update the cart visually without sending
-  // another view_cart event
+  // Update cart without sending another view_cart
   renderCart(false);
 }
 
@@ -549,7 +544,6 @@ function renderCart(trackView = true) {
       total += subtotal;
 
 
-      // Build GA4 item with current cart quantity
       ga4Items.push(
         createGa4Item(
           product,
@@ -593,8 +587,6 @@ function renderCart(trackView = true) {
 
 
   // GA4 - cart view
-  // Only send on the actual cart page view,
-  // not when renderCart() is called after removing an item
   if (trackView) {
     pushEcommerceEvent(
       "view_cart",
@@ -602,7 +594,9 @@ function renderCart(trackView = true) {
         currency: CURRENCY,
 
         value:
-          Number(total.toFixed(2)),
+          Number(
+            total.toFixed(2)
+          ),
 
         items:
           ga4Items
@@ -620,6 +614,64 @@ function setupCheckout() {
 
 
   if (!form) return;
+
+
+  const cart =
+    getCart();
+
+
+  // GA4 - begin checkout
+  // Only send if there are products in the cart
+  if (cart.length > 0) {
+
+    let checkoutValue = 0;
+
+    const checkoutItems =
+      cart.map(item => {
+
+        const product =
+          products.find(
+            product =>
+              product.id === item.id
+          );
+
+
+        if (!product) {
+          return null;
+        }
+
+
+        checkoutValue +=
+          product.price *
+          item.quantity;
+
+
+        return createGa4Item(
+          product,
+          item.quantity
+        );
+      })
+      .filter(Boolean);
+
+
+    if (checkoutItems.length > 0) {
+
+      pushEcommerceEvent(
+        "begin_checkout",
+        {
+          currency: CURRENCY,
+
+          value:
+            Number(
+              checkoutValue.toFixed(2)
+            ),
+
+          items:
+            checkoutItems
+        }
+      );
+    }
+  }
 
 
   form.addEventListener(
