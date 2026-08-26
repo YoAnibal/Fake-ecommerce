@@ -50,21 +50,29 @@ function createGa4Item(
 }
 
 
-function pushViewItemList(listProducts, listId, listName) {
-  pushEcommerceEvent("view_item_list", {
-    item_list_id: listId,
-    item_list_name: listName,
+function pushViewItemList(
+  listProducts,
+  listId,
+  listName
+) {
+  pushEcommerceEvent(
+    "view_item_list",
+    {
+      item_list_id: listId,
+      item_list_name: listName,
 
-    items: listProducts.map((product, index) =>
-      createGa4Item(
-        product,
-        1,
-        index,
-        listId,
-        listName
+      items: listProducts.map(
+        (product, index) =>
+          createGa4Item(
+            product,
+            1,
+            index,
+            listId,
+            listName
+          )
       )
-    )
-  });
+    }
+  );
 }
 
 
@@ -74,9 +82,12 @@ function trackSelectItem(
   listName,
   index
 ) {
-  const product = products.find(
-    product => product.id === productId
-  );
+  const product =
+    products.find(
+      product =>
+        product.id === productId
+    );
+
 
   if (!product) return;
 
@@ -92,20 +103,23 @@ function trackSelectItem(
   );
 
 
-  pushEcommerceEvent("select_item", {
-    item_list_id: listId,
-    item_list_name: listName,
+  pushEcommerceEvent(
+    "select_item",
+    {
+      item_list_id: listId,
+      item_list_name: listName,
 
-    items: [
-      createGa4Item(
-        product,
-        1,
-        index,
-        listId,
-        listName
-      )
-    ]
-  });
+      items: [
+        createGa4Item(
+          product,
+          1,
+          index,
+          listId,
+          listName
+        )
+      ]
+    }
+  );
 }
 
 
@@ -124,22 +138,107 @@ function saveCart(cart) {
 }
 
 
+function getCartEcommerceData() {
+  const cart =
+    getCart();
+
+
+  let value = 0;
+
+  const items = [];
+
+
+  cart.forEach(
+    cartItem => {
+
+      const product =
+        products.find(
+          product =>
+            product.id ===
+            cartItem.id
+        );
+
+
+      if (!product) return;
+
+
+      value +=
+        product.price *
+        cartItem.quantity;
+
+
+      items.push(
+        createGa4Item(
+          product,
+          cartItem.quantity
+        )
+      );
+    }
+  );
+
+
+  return {
+    value:
+      Number(
+        value.toFixed(2)
+      ),
+
+    items:
+      items
+  };
+}
+
+
+function generateTransactionId() {
+
+  // Preferred method in modern browsers
+  if (
+    window.crypto &&
+    crypto.randomUUID
+  ) {
+    return (
+      "UB-" +
+      crypto.randomUUID()
+    );
+  }
+
+
+  // Fallback
+  return (
+    "UB-" +
+    Date.now() +
+    "-" +
+    Math.random()
+      .toString(36)
+      .substring(2, 10)
+      .toUpperCase()
+  );
+}
+
+
 function addToCart(
   productId,
   listId,
   listName,
   index
 ) {
-  const cart = getCart();
+  const cart =
+    getCart();
 
-  const item = cart.find(
-    product => product.id === productId
-  );
+
+  const item =
+    cart.find(
+      product =>
+        product.id === productId
+    );
 
 
   if (item) {
+
     item.quantity += 1;
+
   } else {
+
     cart.push({
       id: productId,
       quantity: 1
@@ -150,16 +249,18 @@ function addToCart(
   saveCart(cart);
 
 
-  const product = products.find(
-    product => product.id === productId
-  );
+  const product =
+    products.find(
+      product =>
+        product.id === productId
+    );
 
 
   if (!product) return;
 
 
   // If the add happens from the PDP,
-  // recover list attribution from select_item
+  // recover list attribution
   if (!listId) {
 
     const storedSelection =
@@ -171,11 +272,14 @@ function addToCart(
     if (storedSelection) {
 
       const selection =
-        JSON.parse(storedSelection);
+        JSON.parse(
+          storedSelection
+        );
 
 
       if (
-        selection.productId === productId
+        selection.productId ===
+        productId
       ) {
 
         listId =
@@ -195,9 +299,11 @@ function addToCart(
   pushEcommerceEvent(
     "add_to_cart",
     {
-      currency: CURRENCY,
+      currency:
+        CURRENCY,
 
-      value: product.price,
+      value:
+        product.price,
 
       items: [
         createGa4Item(
@@ -218,21 +324,28 @@ function addToCart(
 }
 
 
-function removeFromCart(productId) {
-  const cart = getCart();
+function removeFromCart(
+  productId
+) {
+  const cart =
+    getCart();
 
 
-  const cartItem = cart.find(
-    item => item.id === productId
-  );
+  const cartItem =
+    cart.find(
+      item =>
+        item.id === productId
+    );
 
 
   if (!cartItem) return;
 
 
-  const product = products.find(
-    product => product.id === productId
-  );
+  const product =
+    products.find(
+      product =>
+        product.id === productId
+    );
 
 
   if (!product) return;
@@ -251,9 +364,11 @@ function removeFromCart(productId) {
   pushEcommerceEvent(
     "remove_from_cart",
     {
-      currency: CURRENCY,
+      currency:
+        CURRENCY,
 
-      value: removedValue,
+      value:
+        removedValue,
 
       items: [
         createGa4Item(
@@ -267,14 +382,18 @@ function removeFromCart(productId) {
 
   const updatedCart =
     cart.filter(
-      item => item.id !== productId
+      item =>
+        item.id !== productId
     );
 
 
-  saveCart(updatedCart);
+  saveCart(
+    updatedCart
+  );
 
 
-  // Update cart without sending another view_cart
+  // Update cart without
+  // sending another view_cart
   renderCart(false);
 }
 
@@ -296,7 +415,9 @@ function renderProducts() {
 
 
   const category =
-    params.get("category");
+    params.get(
+      "category"
+    );
 
 
   let filteredProducts =
@@ -316,7 +437,8 @@ function renderProducts() {
     filteredProducts =
       products.filter(
         product =>
-          product.category === category
+          product.category ===
+          category
       );
 
 
@@ -332,56 +454,58 @@ function renderProducts() {
 
   grid.innerHTML =
     filteredProducts
-      .map((product, index) => `
-        <div class="card">
+      .map(
+        (product, index) => `
+          <div class="card">
 
-          <img
-            src="${product.image}"
-            alt="${product.name}"
-          >
+            <img
+              src="${product.image}"
+              alt="${product.name}"
+            >
 
-          <h3>
-            ${product.name}
-          </h3>
+            <h3>
+              ${product.name}
+            </h3>
 
-          <p>
-            ${product.category}
-          </p>
+            <p>
+              ${product.category}
+            </p>
 
-          <p>
-            $${product.price}
-          </p>
+            <p>
+              $${product.price}
+            </p>
 
-          <a
-            class="btn"
-            href="product.html?id=${product.id}"
-            onclick="trackSelectItem(
-              '${product.id}',
-              '${listId}',
-              '${listName}',
-              ${index}
-            )"
-          >
-            Ver detalle
-          </a>
+            <a
+              class="btn"
+              href="product.html?id=${product.id}"
+              onclick="trackSelectItem(
+                '${product.id}',
+                '${listId}',
+                '${listName}',
+                ${index}
+              )"
+            >
+              Ver detalle
+            </a>
 
-          <button
-            onclick="addToCart(
-              '${product.id}',
-              '${listId}',
-              '${listName}',
-              ${index}
-            )"
-          >
-            Añadir al carrito
-          </button>
+            <button
+              onclick="addToCart(
+                '${product.id}',
+                '${listId}',
+                '${listName}',
+                ${index}
+              )"
+            >
+              Añadir al carrito
+            </button>
 
-        </div>
-      `)
+          </div>
+        `
+      )
       .join("");
 
 
-  // GA4 - product list impression
+  // GA4 - product list view
   pushViewItemList(
     filteredProducts,
     listId,
@@ -412,7 +536,8 @@ function renderProductDetail() {
 
   const product =
     products.find(
-      item => item.id === id
+      item =>
+        item.id === id
     );
 
 
@@ -475,11 +600,14 @@ function renderProductDetail() {
   if (storedSelection) {
 
     const selection =
-      JSON.parse(storedSelection);
+      JSON.parse(
+        storedSelection
+      );
 
 
     if (
-      selection.productId === product.id
+      selection.productId ===
+      product.id
     ) {
 
       listId =
@@ -494,13 +622,15 @@ function renderProductDetail() {
   }
 
 
-  // GA4 - product detail view
+  // GA4 - product detail
   pushEcommerceEvent(
     "view_item",
     {
-      currency: CURRENCY,
+      currency:
+        CURRENCY,
 
-      value: product.price,
+      value:
+        product.price,
 
       items: [
         createGa4Item(
@@ -516,7 +646,9 @@ function renderProductDetail() {
 }
 
 
-function renderCart(trackView = true) {
+function renderCart(
+  trackView = true
+) {
   const container =
     document.getElementById(
       "cartItems"
@@ -536,7 +668,9 @@ function renderCart(trackView = true) {
     getCart();
 
 
-  if (cart.length === 0) {
+  if (
+    cart.length === 0
+  ) {
 
     container.innerHTML =
       "<p>Tu carrito está vacío.</p>";
@@ -554,57 +688,61 @@ function renderCart(trackView = true) {
 
 
   container.innerHTML =
-    cart.map(item => {
+    cart
+      .map(
+        item => {
 
-      const product =
-        products.find(
-          p => p.id === item.id
-        );
-
-
-      const subtotal =
-        product.price *
-        item.quantity;
+          const product =
+            products.find(
+              p =>
+                p.id === item.id
+            );
 
 
-      total += subtotal;
+          const subtotal =
+            product.price *
+            item.quantity;
 
 
-      ga4Items.push(
-        createGa4Item(
-          product,
-          item.quantity
-        )
-      );
+          total += subtotal;
 
 
-      return `
-        <div class="card">
+          ga4Items.push(
+            createGa4Item(
+              product,
+              item.quantity
+            )
+          );
 
-          <h3>
-            ${product.name}
-          </h3>
 
-          <p>
-            Cantidad:
-            ${item.quantity}
-          </p>
+          return `
+            <div class="card">
 
-          <p>
-            Subtotal:
-            $${subtotal.toFixed(2)}
-          </p>
+              <h3>
+                ${product.name}
+              </h3>
 
-          <button
-            onclick="removeFromCart('${product.id}')"
-          >
-            Eliminar
-          </button>
+              <p>
+                Cantidad:
+                ${item.quantity}
+              </p>
 
-        </div>
-      `;
-    })
-    .join("");
+              <p>
+                Subtotal:
+                $${subtotal.toFixed(2)}
+              </p>
+
+              <button
+                onclick="removeFromCart('${product.id}')"
+              >
+                Eliminar
+              </button>
+
+            </div>
+          `;
+        }
+      )
+      .join("");
 
 
   totalContainer.innerHTML =
@@ -612,13 +750,14 @@ function renderCart(trackView = true) {
     total.toFixed(2);
 
 
-  // GA4 - cart view
+  // GA4 - view cart
   if (trackView) {
 
     pushEcommerceEvent(
       "view_cart",
       {
-        currency: CURRENCY,
+        currency:
+          CURRENCY,
 
         value:
           Number(
@@ -647,48 +786,27 @@ function setupCheckout() {
     getCart();
 
 
-  // GA4 - begin checkout
-  if (cart.length > 0) {
+  // -----------------------------
+  // BEGIN CHECKOUT
+  // -----------------------------
 
-    let checkoutValue = 0;
+  if (
+    cart.length > 0
+  ) {
 
-
-    const checkoutItems =
-      cart.map(item => {
-
-        const product =
-          products.find(
-            product =>
-              product.id === item.id
-          );
+    const checkoutData =
+      getCartEcommerceData();
 
 
-        if (!product) {
-          return null;
-        }
+    if (
+      checkoutData.items.length > 0
+    ) {
 
-
-        checkoutValue +=
-          product.price *
-          item.quantity;
-
-
-        return createGa4Item(
-          product,
-          item.quantity
-        );
-      })
-      .filter(Boolean);
-
-
-    if (checkoutItems.length > 0) {
-
-      // Create a stable representation
-      // of the current cart
       const checkoutCartKey =
         cart
-          .map(item =>
-            `${item.id}:${item.quantity}`
+          .map(
+            item =>
+              `${item.id}:${item.quantity}`
           )
           .sort()
           .join("|");
@@ -700,8 +818,6 @@ function setupCheckout() {
         );
 
 
-      // Only fire begin_checkout if this
-      // cart has not already started checkout
       if (
         previousCheckoutCartKey !==
         checkoutCartKey
@@ -710,15 +826,14 @@ function setupCheckout() {
         pushEcommerceEvent(
           "begin_checkout",
           {
-            currency: CURRENCY,
+            currency:
+              CURRENCY,
 
             value:
-              Number(
-                checkoutValue.toFixed(2)
-              ),
+              checkoutData.value,
 
             items:
-              checkoutItems
+              checkoutData.items
           }
         );
 
@@ -732,6 +847,132 @@ function setupCheckout() {
   }
 
 
+  // -----------------------------
+  // SHIPPING + PAYMENT SELECTS
+  // -----------------------------
+
+  const selects =
+    form.querySelectorAll(
+      "select"
+    );
+
+
+  const shippingSelect =
+    selects[0];
+
+
+  const paymentSelect =
+    selects[1];
+
+
+  // -----------------------------
+  // ADD SHIPPING INFO
+  // -----------------------------
+
+  if (shippingSelect) {
+
+    shippingSelect.addEventListener(
+      "change",
+      function() {
+
+        const shippingTier =
+          shippingSelect.value;
+
+
+        if (!shippingTier) {
+          return;
+        }
+
+
+        const checkoutData =
+          getCartEcommerceData();
+
+
+        if (
+          checkoutData.items.length ===
+          0
+        ) {
+          return;
+        }
+
+
+        pushEcommerceEvent(
+          "add_shipping_info",
+          {
+            currency:
+              CURRENCY,
+
+            value:
+              checkoutData.value,
+
+            shipping_tier:
+              shippingTier,
+
+            items:
+              checkoutData.items
+          }
+        );
+      }
+    );
+  }
+
+
+  // -----------------------------
+  // ADD PAYMENT INFO
+  // -----------------------------
+
+  if (paymentSelect) {
+
+    paymentSelect.addEventListener(
+      "change",
+      function() {
+
+        const paymentType =
+          paymentSelect.value;
+
+
+        if (!paymentType) {
+          return;
+        }
+
+
+        const checkoutData =
+          getCartEcommerceData();
+
+
+        if (
+          checkoutData.items.length ===
+          0
+        ) {
+          return;
+        }
+
+
+        pushEcommerceEvent(
+          "add_payment_info",
+          {
+            currency:
+              CURRENCY,
+
+            value:
+              checkoutData.value,
+
+            payment_type:
+              paymentType,
+
+            items:
+              checkoutData.items
+          }
+        );
+      }
+    );
+  }
+
+
+  // -----------------------------
+  // COMPLETE ORDER
+  // -----------------------------
+
   form.addEventListener(
     "submit",
     function(event) {
@@ -739,14 +980,182 @@ function setupCheckout() {
       event.preventDefault();
 
 
+      // IMPORTANT:
+      // Read the cart BEFORE deleting it
+      const purchaseData =
+        getCartEcommerceData();
+
+
+      if (
+        purchaseData.items.length ===
+        0
+      ) {
+
+        alert(
+          "Tu carrito está vacío."
+        );
+
+        return;
+      }
+
+
+      // Generate a unique order ID
+      const transactionId =
+        generateTransactionId();
+
+
+      // Save the completed order temporarily.
+      // thank-you.html will use this data
+      // to send the purchase event.
+      const completedOrder = {
+
+        transaction_id:
+          transactionId,
+
+        currency:
+          CURRENCY,
+
+        value:
+          purchaseData.value,
+
+        items:
+          purchaseData.items
+
+      };
+
+
+      sessionStorage.setItem(
+        "lastOrder",
+        JSON.stringify(
+          completedOrder
+        )
+      );
+
+
+      // Remove possible previous purchase marker
+      // so this NEW transaction can be tracked
+      sessionStorage.removeItem(
+        "trackedPurchaseId"
+      );
+
+
+      // Reset begin_checkout state
+      sessionStorage.removeItem(
+        "checkoutStartedCart"
+      );
+
+
+      // Now we can safely clear the cart
       localStorage.removeItem(
         "cart"
       );
 
 
+      // Go to confirmation page
       window.location.href =
         "thank-you.html";
     }
+  );
+}
+
+
+function trackPurchase() {
+  const orderElement =
+    document.getElementById(
+      "orderId"
+    );
+
+
+  // This function should only run
+  // on thank-you.html
+  if (!orderElement) {
+    return;
+  }
+
+
+  const storedOrder =
+    sessionStorage.getItem(
+      "lastOrder"
+    );
+
+
+  if (!storedOrder) {
+
+    orderElement.textContent =
+      "No disponible";
+
+    return;
+  }
+
+
+  let order;
+
+
+  try {
+
+    order =
+      JSON.parse(
+        storedOrder
+      );
+
+  } catch (error) {
+
+    return;
+  }
+
+
+  if (
+    !order.transaction_id ||
+    !order.items ||
+    order.items.length === 0
+  ) {
+    return;
+  }
+
+
+  // Display the real generated order ID
+  orderElement.textContent =
+    order.transaction_id;
+
+
+  const trackedPurchaseId =
+    sessionStorage.getItem(
+      "trackedPurchaseId"
+    );
+
+
+  // Prevent duplicate purchase on refresh
+  if (
+    trackedPurchaseId ===
+    order.transaction_id
+  ) {
+    return;
+  }
+
+
+  // GA4 - purchase
+  pushEcommerceEvent(
+    "purchase",
+    {
+      transaction_id:
+        order.transaction_id,
+
+      currency:
+        order.currency,
+
+      value:
+        order.value,
+
+      items:
+        order.items
+    }
+  );
+
+
+  // Mark this transaction as already tracked
+  sessionStorage.setItem(
+    "trackedPurchaseId",
+    order.transaction_id
   );
 }
 
@@ -792,7 +1201,10 @@ function setupSearch() {
     );
 
 
-  if (!searchInput || !grid) {
+  if (
+    !searchInput ||
+    !grid
+  ) {
     return;
   }
 
@@ -837,52 +1249,54 @@ function setupSearch() {
 
       grid.innerHTML =
         results
-          .map((product, index) => `
-            <div class="card">
+          .map(
+            (product, index) => `
+              <div class="card">
 
-              <img
-                src="${product.image}"
-                alt="${product.name}"
-              >
+                <img
+                  src="${product.image}"
+                  alt="${product.name}"
+                >
 
-              <h3>
-                ${product.name}
-              </h3>
+                <h3>
+                  ${product.name}
+                </h3>
 
-              <p>
-                ${product.category}
-              </p>
+                <p>
+                  ${product.category}
+                </p>
 
-              <p>
-                $${product.price}
-              </p>
+                <p>
+                  $${product.price}
+                </p>
 
-              <a
-                class="btn"
-                href="product.html?id=${product.id}"
-                onclick="trackSelectItem(
-                  '${product.id}',
-                  '${listId}',
-                  '${listName}',
-                  ${index}
-                )"
-              >
-                Ver detalle
-              </a>
+                <a
+                  class="btn"
+                  href="product.html?id=${product.id}"
+                  onclick="trackSelectItem(
+                    '${product.id}',
+                    '${listId}',
+                    '${listName}',
+                    ${index}
+                  )"
+                >
+                  Ver detalle
+                </a>
 
-              <button
-                onclick="addToCart(
-                  '${product.id}',
-                  '${listId}',
-                  '${listName}',
-                  ${index}
-                )"
-              >
-                Añadir al carrito
-              </button>
+                <button
+                  onclick="addToCart(
+                    '${product.id}',
+                    '${listId}',
+                    '${listName}',
+                    ${index}
+                  )"
+                >
+                  Añadir al carrito
+                </button>
 
-            </div>
-          `)
+              </div>
+            `
+          )
           .join("");
     }
   );
@@ -893,5 +1307,6 @@ renderProducts();
 renderProductDetail();
 renderCart();
 setupCheckout();
+trackPurchase();
 setupNewsletter();
 setupSearch();
